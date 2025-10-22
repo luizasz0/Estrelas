@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jornada Estelar - Simulação Interativa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
+            overflow-x: hidden;
+            color: #fff;
+        }
+
+        #starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 3em;
+            margin: 30px 0;
+            background: linear-gradient(45deg, #ff6b9d, #c44569, #ffa726, #42a5f5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(255,107,157,0.5);
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 40px;
+            color: #aaa;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px currentColor;
+        }
+
+        .btn-low {
+            background: linear-gradient(135deg, #ff6b6b, #c44569);
+            color: white;
+        }
+
+        .btn-medium {
+            background: linear-gradient(135deg, #ffa726, #fb8c00);
+            color: white;
+        }
+
+        .btn-high {
+            background: linear-gradient(135deg, #42a5f5, #1e88e5);
+            color: white;
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #66bb6a, #43a047);
+            color: white;
+        }
+
+        .pathways {
+            display: flex;
+            justify-content: space-around;
+            gap: 30px;
+            margin-top: 50px;
+            flex-wrap: wrap;
+        }
+
+        .pathway {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.1);
+            position: relative;
+        }
+
+        .pathway-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stage {
+            margin: 25px 0;
+            padding: 20px;
+            border-radius: 15px;
+            background: rgba(0,0,0,0.3);
+            position: relative;
+            opacity: 0.3;
+            transition: all 0.5s;
+            border: 2px solid transparent;
+        }
+
+        .stage.active {
+            opacity: 1;
+            transform: scale(1.05);
+            box-shadow: 0 0 30px currentColor;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1.05); }
+            50% { transform: scale(1.08); }
+        }
+
+        .stage-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            position: relative;
+        }
+
+        .stage.active .stage-icon {
+            animation: rotate 10s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .stage-name {
+            font-weight: bold;
+            font-size: 1.2em;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .stage-desc {
+            font-size: 0.9em;
+            color: #bbb;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .arrow {
+            text-align: center;
+            font-size: 2em;
+            color: #666;
+            margin: 10px 0;
+        }
+
+        .stage.active + .arrow {
+            color: #fff;
+            animation: bounce 1s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .pathway-low .stage { border-color: #ff6b6b; }
+        .pathway-low .stage.active { color: #ff6b6b; box-shadow: 0 0 30px #ff6b6b; }
+        .pathway-low .pathway-title { color: #ff6b6b; }
+
+        .pathway-medium .stage { border-color: #ffa726; }
+        .pathway-medium .stage.active { color: #ffa726; box-shadow: 0 0 30px #ffa726; }
+        .pathway-medium .pathway-title { color: #ffa726; }
+
+        .pathway-high .stage { border-color: #42a5f5; }
+        .pathway-high .stage.active { color: #42a5f5; box-shadow: 0 0 30px #42a5f5; }
+        .pathway-high .pathway-title { color: #42a5f5; }
+
+        .info-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .info-box h3 {
+            color: #ffa726;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2em; }
+            .subtitle { font-size: 1em; }
+            .pathway { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+    
+    <div class="container">
+        <h1>🌟 Sua Estrela Vai Sobreviver ou Explodir? 🌟</h1>
+        <p class="subtitle">Explore as três jornadas estelares baseadas na massa inicial</p>
+
+        <div class="controls">
+            <button class="btn btn-low" onclick="startJourney('low')">
+                <span>Massa Baixa</span><br>
+                <small>(< 0.5 Massas Solares)</small>
+            </button>
+            <button class="btn btn-medium" onclick="startJourney('medium')">
+                <span>Massa Média</span><br>
+                <small>(0.5 - 8 Massas Solares)</small>
+            </button>
+            <button class="btn btn-high" onclick="startJourney('high')">
+                <span>Massa Alta</span><br>
+                <small>(> 8 Massas Solares)</small>
+            </button>
+            <button class="btn btn-reset" onclick="reset()">↻ Reiniciar</button>
+        </div>
+
+        <div class="pathways">
+            <!-- Trilha 1: Massa Baixa -->
+            <div class="pathway pathway-low">
+                <div class="pathway-title">🔴 Trilha da Longevidade</div>
+                
+                <div class="stage stage-nebula-low">
+                    <div class="stage-icon" style="background: radial-gradient(circle, #ff6b9d, #c44569);">☁️</div>
+                    <div class="stage-name">Nebulosa</div>
+                    <div class="stage-desc">Nuvem de gás e poeira se contrai pela gravidade</div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="stage stage-red-dwarf">
+                    <div class="stage-icon" style="background: radial-gradient(circle, #ff4757, #8b0000);">🔴</div>
+                    <div class="stage-name">Anã Vermelha</div>
+                    <div class="stage-desc">Estrela pequena e fria, queima hidrogênio lentamente por trilhões de anos</div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="stage stage-white-dwarf-low">
+                    <div class="stage-icon" style="background: radial-gradient(circle, #f1f2f6, #dfe6e9);">⚪</div>
+                    <div class="stage-name">Anã Branca</div>
+                    <div class="stage-desc">Núcleo denso resfriando por bilhões de anos</div>
+                </div>
+            </div>
+
+            <!-- Trilha 2: Massa Média -->
+            <div class="pathway pathway-medium">
+                <div class="pathway-title">🟡 Trilha do Sol</div>
+                
+                <div class="stage stage-nebula-med">
+                    <div class="stage-icon" style="background: radial-gradient(circle, #ffa726, #fb8c00);">☁️</div>
+                    <div class="stage-name">Nebulosa</div>
+                    <div class="stage-desc">Formação estelar com massa similar ao Sol</div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="stage stage-yellow-star">
+                    <div class="stage-icon" style="background: radial-gradient(circle, #ffd93d, #f9ca24);">🟡</div>
+                    <div class="stage-name">Estrela Amarela</div>
+                    <div class="stage-desc">Sequência principal, fusão de hidrogênio estável (10 bilhões de anos)</div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="stage stage-red-giant">
+                    <div class="stage-icon" style="background: radial-gradient(circle, #ff6348, #e74c3c);">🔶</div>
+                    <div class="stage-name">Gigante Vermelha</div>
+                    <div class="stage-desc">Expansão massiva, fusão de hélio no núcleo</div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="stage stage-planetary-nebula">
+                    <div class="stage-icon" style="background: radial-gradient(circle, #a29bfe, #6c5ce7);">💫</div>
+                    <div class="stage-name">Nebulosa Planetária</div>
+                    <div class="stage-desc">Camadas externas ejetadas formando nuvem colorida</div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="stage stage-white-dwarf-med">
+                    <div class="stage-icon" style="background: radial-gradient(circle, #f1f2f6, #dfe6e9);">⚪</div>
+                    <div class="stage-name">Anã Branca</div>
+                    <div class="stage-desc">Remanescente denso do tamanho da Terra</div>
+                </div>
+            </div>
+
+            <!-- Trilha 3: Massa Alta -->
+            <div class="pathway pathway-high">
+                <div class="pathway-title">🔵 Trilha da Destruição</div>
+                
+                <div class="stage stage-nebula-high">
+                    <div class="stage-icon" style="background: radial-gradient(circle, #42a5f5, #1e88e5);">☁️</div>
+                    <div class="stage-name">Nebulosa</div>
+                    <div class="stage-desc">Formação rápida de estrela massiva</div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="stage stage-blue-giant">
+                    <div class="stage-icon" style="background: radial-gradient(circle, #00d2ff, #0099cc);">🔵</div>
+                    <div class="stage-name">Gigante Azul</div>
+                    <div class="stage-desc">Estrela super quente e brilhante, vida curta (milhões de anos)</div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="stage stage-supernova">
+                    <div class="stage-icon" style="background: radial-gradient(circle, #ff9ff3, #f368e0);">💥</div>
+                    <div class="stage-name">Supernova</div>
+                    <div class="stage-desc">Explosão catastrófica visível em galáxias distantes</div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="stage stage-final">
+                    <div class="stage-icon" style="background: radial-gradient(circle, #2c3e50, #000000);">⚫</div>
+                    <div class="stage-name">Estrela de Nêutrons / Buraco Negro</div>
+                    <div class="stage-desc">Colapso extremo do núcleo gerando objeto ultra denso</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>💡 Curiosidades Estelares:</h3>
+            <p><strong>• Anãs Vermelhas</strong> são as estrelas mais comuns no universo (70%) e podem viver por 10 trilhões de anos!</p>
+            <p><strong>• Nosso Sol</strong> está na metade de sua vida e se tornará uma gigante vermelha em 5 bilhões de anos.</p>
+            <p><strong>• Supernovas</strong> são tão brilhantes que uma única explosão pode superar o brilho de uma galáxia inteira!</p>
+            <p><strong>• Buracos Negros</strong> têm gravidade tão intensa que nem a luz consegue escapar.</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const stars = [];
+        const numStars = 200;
+
+        for (let i = 0; i < numStars; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 2,
+                speed: Math.random() * 0.5 + 0.1,
+                brightness: Math.random()
+            });
+        }
+
+        function drawStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            stars.forEach(star => {
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                star.brightness += 0.02;
+                const brightness = (Math.sin(star.brightness) + 1) / 2;
+                ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+                ctx.fill();
+                
+                star.y += star.speed;
+                if (star.y > canvas.height) {
+                    star.y = 0;
+                    star.x = Math.random() * canvas.width;
+                }
+            });
+            
+            requestAnimationFrame(drawStars);
+        }
+
+        drawStars();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        const journeys = {
+            low: ['.stage-nebula-low', '.stage-red-dwarf', '.stage-white-dwarf-low'],
+            medium: ['.stage-nebula-med', '.stage-yellow-star', '.stage-red-giant', '.stage-planetary-nebula', '.stage-white-dwarf-med'],
+            high: ['.stage-nebula-high', '.stage-blue-giant', '.stage-supernova', '.stage-final']
+        };
+
+        let currentJourney = null;
+        let currentStage = 0;
+
+        function startJourney(type) {
+            reset();
+            currentJourney = journeys[type];
+            currentStage = 0;
+            animateStage();
+        }
+
+        function animateStage() {
+            if (currentStage < currentJourney.length) {
+                const stage = document.querySelector(currentJourney[currentStage]);
+                stage.classList.add('active');
+                
+                setTimeout(() => {
+                    currentStage++;
+                    animateStage();
+                }, 2000);
+            }
+        }
+
+        function reset() {
+            document.querySelectorAll('.stage').forEach(stage => {
+                stage.classList.remove('active');
+            });
+            currentJourney = null;
+            currentStage = 0;
+        }
+    </script>
+</body>
+</html>
