@@ -1,3 +1,0 @@
-# Estrelas
-
-estrelas são legais
